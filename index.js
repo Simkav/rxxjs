@@ -17,6 +17,29 @@ class Observer extends EventEmitter {
     })
   }
 }
+class Pipe extends Observer {
+  constructor () {
+    super()
+    this._func = null
+    this._parent = null
+    this._cb = null
+    this.on('recieved', value => {
+      if (this._func(value)) {
+        if (this._cb) {
+          this._cb(value)
+        } else {
+          this._pipes.forEach(pipe => {
+            pipe.emit('recieved', value)
+          })
+        }
+      }
+    })
+  }
+}
+Pipe.prototype.subscribe = function (cb) {
+  this._cb = cb
+  this._parent.emit('subscribe')
+}
 Observer.prototype.constructor = Observer
 Observer.prototype.pipe = function (destination) {
   destination._parent = this
