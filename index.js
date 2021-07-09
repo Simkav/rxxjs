@@ -36,11 +36,14 @@ class Pipe extends Observer {
     })
   }
 }
+
 Pipe.prototype.subscribe = function (cb) {
   this._cb = cb
   this._parent.emit('subscribe')
 }
+
 Observer.prototype.constructor = Observer
+
 Observer.prototype.pipe = function (destination) {
   destination._parent = this
   this._pipes.push(destination)
@@ -62,4 +65,11 @@ Observer.prototype.unsubscribe = function () {
 Observer.prototype.event = function (event) {
   this._event = event
   return this
+}
+
+class FilterPipe extends Pipe {
+  constructor (func) {
+    super()
+    this._func = func
+  }
 }
