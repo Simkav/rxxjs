@@ -26,10 +26,10 @@ const observer = new Observer();
 const subscription = observer.subscribe('click', () => {}) // подписаться на событие
 subscription.unsubscribe(); // отписаться от события
 
-function eventToObserver(eventEmmiter, event) {
+function eventToObserver(event) {
   const observer = new Observer();
 
-  eventEmiter.on(event, observer.push)
+  this.on(event, observer.push)
   
   return
 } 
@@ -64,108 +64,41 @@ const multicast = new MulticastPipe({listeners: [throttle, skipWhile, buffer]});
 observer.event('click').pipe(multicast)
 */
 const { EventEmitter } = require('events')
+const { Readable, Transform, PassThrough } = require('stream')
 class Observer extends EventEmitter {
   constructor () {
     super()
-    this._pipes = []
-    this._complete = null
-    this._event = null
-    this.on('recieve', value => {
-      this._pipes.forEach(pipe => {
-        pipe.emit('recieved', value)
-      })
-    })
-    this.on('subscribe', () => {
-      this.on(this._event, value => {
-        this.emit('recieve', value)
-      })
-    })
+    this._stream = new Readable({ read () {} })
+    this._piped = this._stream
   }
 }
-class Pipe extends Observer {
-  constructor () {
-    super()
-    this._func = null
-    this._parent = null
-    this._cb = null
-    this.on('recieved', value => {
-      if (this._func(value)) {
-        if (this._cb) {
-          this._cb(value)
-        } else {
-          this._pipes.forEach(pipe => {
-            pipe.emit('recieved', value)
-          })
-        }
-      }
-    })
-  }
-}
-
-Pipe.prototype.subscribe = function (cb) {
-  this._cb = cb
-  this._parent.emit('subscribe')
-}
-
 Observer.prototype.constructor = Observer
-
-Observer.prototype.pipe = function (destination) {
-  this._pipes.push(destination)
-  destination._parent = this
-  return destination
+Observer.prototype.subscribe = function (...args) {
+  args.length === 1
+    ? this._piped.on('data', args[0])
+    : this.on(args[0], args[1])
 }
-
-Observer.prototype.subscribe = function (event, cb) {
-  this.on(event, cb)
-  this._complete = false
-  return this
-}
-
-Observer.prototype.unsubscribe = function () {
-  this._complete = true
-  this.removeAllListeners()
-  this._pipes = null
-}
-
 Observer.prototype.event = function (event) {
-  this._event = event
+  this.on(event, data => this._stream.push(data))
   return this
 }
-
-class FilterPipe extends Pipe {
-  constructor (func) {
-    super()
-    this._func = func
-  }
+Observer.prototype.pipe = function (dest) {
+  this._piped = this._piped.pipe(dest)
+  return this
 }
-
-const observer = new Observer()
-
-const filter = new FilterPipe(v => v % 2 === 0)
-const newFilter = new FilterPipe(v => v % 4 === 0)
-
-observer
-  .event('alo')
-  .pipe(filter)
-  .pipe(newFilter)
-  .subscribe(console.log)
-
-for (let i = 0; i < 100; i++) {
-  observer.emit('alo', i)
+Observer.prototype.unsubscribe = function () {
+  this._stream.destroy()
 }
+const a = new Observer()
 
-// console.log(filter, newFilter)
-// console.log(observer)
-// console.log(filter)
-// console.log(newFilter)
+const report = new PassThrough()
 
-// observer.subscribe('alob', a => {
-//   console.log(a)
-// })
-// observer.pipe({ alo: 'alo' })
-// observer.emit('alob', 'asdasdasdadasdas')
+report.on('data', data => console.log('pipe', data))
 
-// console.log(observer.pipe([1, 2, 3, 4]))
+a.event('abc')
+  .pipe(report)
+  .subscribe(data => console.log())
 
-// console.log(observer)
-// observer.unsubscribe()
+a.emit('abc', 'alesha popovich')
+
+a.unsubscribe()
