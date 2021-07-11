@@ -63,12 +63,18 @@ const subscription8 = buffer.subscribe(() => {});
 const multicast = new MulticastPipe({listeners: [throttle, skipWhile, buffer]});
 observer.event('click').pipe(multicast)
 */
+const {
+  ToSubscribePipe,
+  DebouncePipe,
+  FilterPipe,
+  SkipWhilePipe
+} = require('./pipes.js')
 const { EventEmitter } = require('events')
-const { Readable, Transform, PassThrough } = require('stream')
+const { Readable } = require('stream')
 class Observer extends EventEmitter {
   constructor () {
     super()
-    this._stream = new Readable({ read () {} })
+    this._stream = new Readable({ objectMode: true, read () {} })
     this._piped = this._stream
   }
 }
@@ -88,17 +94,28 @@ Observer.prototype.pipe = function (dest) {
 }
 Observer.prototype.unsubscribe = function () {
   this._stream.destroy()
+  console.log('STREAM DESTROYED, ALO KONEC')
 }
 const a = new Observer()
 
-const report = new PassThrough()
-
-report.on('data', data => console.log('pipe', data))
+// const toSubscribe = new Pipes.ToSubscribePipe()
+const filter = new FilterPipe({
+  condition: v => v % 2 === 0
+})
+// const DebouncePipe = new Pipes.DebouncePipe({ timeout: 2000 })
+const skipWhile = new SkipWhilePipe({
+  condition: data => data >= 5
+})
 
 a.event('abc')
-  .pipe(report)
-  .subscribe(data => console.log())
+  .pipe(skipWhile)
+  .pipe(filter)
+  .subscribe(data => console.log(data))
 
-a.emit('abc', 'alesha popovich')
+for (let i = 0; i < 10; i++) {
+  a.emit('abc', i)
+}
 
-a.unsubscribe()
+// a.unsubscribe()
+
+module.exports = Observer
