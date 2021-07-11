@@ -68,5 +68,17 @@ class ToSubscribePipe extends PassThrough {
     super(options)
   }
 } 
+class FilterPipe extends Transform {
+  constructor ({ condition }) {
+    super(options)
+    this._condition = condition
+  }
+  _transform (data, encoding, done) {
+    if (this._condition(data)) {
+      this.push(data)
+    }
+    done()
+  }
+}
 
 module.exports = { ToSubscribePipe }
