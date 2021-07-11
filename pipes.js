@@ -98,4 +98,23 @@ class DebouncePipe extends Transform {
   }
 }
 
-module.exports = { ToSubscribePipe }
+class SkipWhilePipe extends Transform {
+  constructor ({ condition }) {
+    super(options)
+    this._condition = condition
+    this._isSkiping = true
+  }
+  _transform (data, encoding, done) {
+    if (this._isSkiping) {
+      if (this._condition(data)) {
+        this._isSkiping = false
+        this.push(data)
+      }
+    } else {
+      this.push(data)
+    }
+    done()
+  }
+}
+
+module.exports = { ToSubscribePipe, DebouncePipe, FilterPipe, SkipWhilePipe }
