@@ -67,7 +67,8 @@ class ToSubscribePipe extends PassThrough {
   constructor () {
     super(options)
   }
-} 
+}
+
 class FilterPipe extends Transform {
   constructor ({ condition }) {
     super(options)
@@ -77,6 +78,22 @@ class FilterPipe extends Transform {
     if (this._condition(data)) {
       this.push(data)
     }
+    done()
+  }
+}
+
+class DebouncePipe extends Transform {
+  constructor ({ timeout }) {
+    super(options)
+    this._timeout = timeout
+    this._timer = null
+  }
+  _transform (data, encoding, done) {
+    console.log(data)
+    clearTimeout(this._timer)
+    this._timer = setTimeout(() => {
+      this.push(data)
+    }, this._timeout)
     done()
   }
 }
