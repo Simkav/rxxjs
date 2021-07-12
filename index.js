@@ -83,10 +83,12 @@ Observer.prototype.subscribe = function (...args) {
   args.length === 1
     ? this._piped.on('data', args[0])
     : this.on(args[0], args[1])
+  return this
 }
 Observer.prototype.event = function (event) {
-  this.on(event, data => this._stream.push(data))
-  return this
+  const obs = new Observer()
+  this.on(event, data => obs._stream.push(data))
+  return obs
 }
 Observer.prototype.pipe = function (dest) {
   this._piped = this._piped.pipe(dest)
@@ -94,27 +96,52 @@ Observer.prototype.pipe = function (dest) {
 }
 Observer.prototype.unsubscribe = function () {
   this._stream.destroy()
+  this.removeAllListeners()
   console.log('STREAM DESTROYED, ALO KONEC')
 }
 const a = new Observer()
 
-// const toSubscribe = new Pipes.ToSubscribePipe()
 const filter = new FilterPipe({
   condition: v => v % 2 === 0
 })
-// const DebouncePipe = new Pipes.DebouncePipe({ timeout: 2000 })
 const skipWhile = new SkipWhilePipe({
   condition: data => data >= 5
 })
 
-a.event('abc')
-  .pipe(skipWhile)
+// const filter = new FilterPipe({ condition: event => event.a > 10 })
+const subscription3 = a
+  .event('abc')
   .pipe(filter)
-  .subscribe(data => console.log(data))
+  .subscribe(data => {
+    console.log(data)
+  }) // подписаться на событие через трубу
 
 for (let i = 0; i < 10; i++) {
   a.emit('abc', i)
 }
+const filter1 = new FilterPipe({
+  condition: v => v % 2 === 0
+})
+
+const subscription4 = a
+  .event('abc')
+  .pipe(filter1)
+  .subscribe(data => {
+    console.log(data)
+  })
+
+setTimeout(() => {
+  subscription3.unsubscribe()
+  console.log('new array')
+  for (let i = 0; i < 10; i++) {
+    a.emit('abc', i)
+  }
+}, 100)
+
+// a.event('abc')
+//   .pipe(skipWhile)
+//   .pipe(filter)
+//   .subscribe(data => console.log(data))
 
 // a.unsubscribe()
 
