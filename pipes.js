@@ -139,11 +139,36 @@ class IntervalPipe extends Transform {
     done()
   }
 }
+class ThrottlePipe extends Transform {
+  constructor ({ timeout, count }) {
+    super(options)
+    this._timeout = timeout
+    this._count = count
+    this._timeoutId = null
+    this._isRunning = false
+    this._counted = 0
+  }
+  _transform (data, encoding, done) {
+    if (!this._isRunning) {
+      this._isRunning = true
+      this._timeoutId = setTimeout(() => {
+        this._isRunning = false
+        this._counted = 0
+      }, this._timeout)
+    }
+    if (this._counted < this._count) {
+      this.push(data)
+      this._counted++
+    }
+    done()
+  }
+}
 
 module.exports = {
   ToSubscribePipe,
   DebouncePipe,
   FilterPipe,
   SkipWhilePipe,
-  IntervalPipe
+  IntervalPipe,
+  ThrottlePipe
 }
