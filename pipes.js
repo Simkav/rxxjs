@@ -117,4 +117,33 @@ class SkipWhilePipe extends Transform {
   }
 }
 
-module.exports = { ToSubscribePipe, DebouncePipe, FilterPipe, SkipWhilePipe }
+class IntervalPipe extends Transform {
+  constructor ({ timeout }) {
+    super(options)
+    this._timeout = timeout
+    this._values = []
+    this._intervalId = null
+  }
+  _transform (data, encoding, done) {
+    this._values.push(data)
+
+    if (!this._intervalId) {
+      this._intervalId = setInterval(() => {
+        this.push(this._values.shift())
+        if (!this._values.length) {
+          clearInterval(this._intervalId)
+          this._intervalId = null
+        }
+      }, this._timeout)
+    }
+    done()
+  }
+}
+
+module.exports = {
+  ToSubscribePipe,
+  DebouncePipe,
+  FilterPipe,
+  SkipWhilePipe,
+  IntervalPipe
+}
