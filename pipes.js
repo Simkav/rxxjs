@@ -117,4 +117,74 @@ class SkipWhilePipe extends Transform {
   }
 }
 
-module.exports = { ToSubscribePipe, DebouncePipe, FilterPipe, SkipWhilePipe }
+class IntervalPipe extends Transform {
+  constructor ({ timeout }) {
+    super(options)
+    this._timeout = timeout
+    this._values = []
+    this._intervalId = null
+  }
+  _transform (data, encoding, done) {
+    this._values.push(data)
+
+    if (!this._intervalId) {
+      this._intervalId = setInterval(() => {
+        this.push(this._values.shift())
+        if (!this._values.length) {
+          clearInterval(this._intervalId)
+          this._intervalId = null
+        }
+      }, this._timeout)
+    }
+    done()
+  }
+}
+class ThrottlePipe extends Transform {
+  constructor ({ timeout, count }) {
+    super(options)
+    this._timeout = timeout
+    this._count = count
+    this._timeoutId = null
+    this._isRunning = false
+    this._counted = 0
+  }
+  _transform (data, encoding, done) {
+    if (!this._isRunning) {
+      this._isRunning = true
+      this._timeoutId = setTimeout(() => {
+        this._isRunning = false
+        this._counted = 0
+      }, this._timeout)
+    }
+    if (this._counted < this._count) {
+      this.push(data)
+      this._counted++
+    }
+    done()
+  }
+}
+class BufferPipe extends Transform {
+  constructor ({ actionStream }) {
+    super(options)
+    this._data = []
+    this._stream = actionStream
+    this._stream.on('data', () => {
+      this.push(this._data)
+      this._data.length = 0
+    })
+  }
+  _transform (data, encoding, done) {
+    this._data.push(data)
+    done()
+  }
+}
+
+module.exports = {
+  ToSubscribePipe,
+  DebouncePipe,
+  FilterPipe,
+  SkipWhilePipe,
+  IntervalPipe,
+  ThrottlePipe,
+  BufferPipe
+}
