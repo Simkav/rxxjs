@@ -1,67 +1,4 @@
-/*
-Для фильтрации событий https://rxjs.dev/api/operators/filter
-Для задержки событий https://rxjs.dev/api/operators/debounceTime
-Для интервального распределения событий https://rxjs.dev/api/operators/timeInterval
-Для ограничения количества событий https://rxjs.dev/api/operators/throttle
-Для пропуска до порогового значения https://rxjs.dev/api/operators/skipWhile
-Для буферизации событий https://rxjs.dev/api/operators/buffer
-Для передачи события другим потокам https://rxjs.dev/api/operators/connect
-
-const {
-  Observer,
-  ToSubscribePipe,
-  FilterPipe,
-  DebouncePipe,
-  IntervalPipe,
-  ThrottlePipe,
-  SkipWhilePipe,
-  BufferPipe,
-  MulticastPipe,
-} = require('./observer');
-
-const observer = new Observer();
-
-const subscription = observer.subscribe('click', () => {}) // подписаться на событие
-subscription.unsubscribe(); // отписаться от события
-
-function eventToObserver(event) {
-  const observer = new Observer();
-
-  this.on(event, observer.push)
-  
-  return
-} 
-
-
-const toSubscribe = new ToSubscribePipe();
-const subscription2 = observer.event('click').pipe(toSubscribe).subscribe(() => {}) // подписаться на событие через трубу
-subscription2.unsubscribe(); //отписаться от события
-
-const filter = new FilterPipe({condition: (event) => event.a > 10});
-const subscription3 = observer.event('click').pipe(filter).subscribe(() => {}) // подписаться на событие через трубу
-subscription3.unsubscribe(); //отписаться от события
-
-const debounce = new DebouncePipe({timeout: 300});
-const subscription4 = observer.event('click').pipe(filter).pipe(debounce).subscribe(() => {}) // подписаться на событие через трубу
-subscription4.unsubscribe(); //отписаться от события
-
-const interval = new IntervalPipe({timeout: 300});
-const subscription5 = observer.event('click').pipe(interval).subscribe(() => {}) // подписаться на событие через трубу
-subscription5.unsubscribe(); //отписаться от события
-
-const throttle = new ThrottlePipe({timeout: 1000, count: 1});
-const subscription6 = throttle.subscribe(() => {});
-
-const skipWhile = new SkipWhilePipe({condition: (event) => event.a < 1});
-const subscription7 = skipWhile.subscribe(() => {});
-
-const buffer = new BufferPipe({actionStream: skipWhile});
-const subscription8 = buffer.subscribe(() => {});
-
-const multicast = new MulticastPipe({listeners: [throttle, skipWhile, buffer]});
-observer.event('click').pipe(multicast)
-*/
-const { Writable, Transform, PassThrough, Duplex } = require('stream')
+const { Transform, PassThrough } = require('stream')
 const subscribe = function (cb) {
   this.on('data', cb)
 }
@@ -147,6 +84,7 @@ class IntervalPipe extends Transform {
   }
   subscribe = subscribe
 }
+
 class ThrottlePipe extends Transform {
   constructor ({ timeout, count }) {
     super(options)
@@ -172,6 +110,7 @@ class ThrottlePipe extends Transform {
   }
   subscribe = subscribe
 }
+
 class BufferPipe extends Transform {
   constructor ({ actionStream }) {
     super(options)
@@ -188,10 +127,6 @@ class BufferPipe extends Transform {
   }
   subscribe = subscribe
 }
-/* 
-const multicast = new MulticastPipe({listeners: [throttle, skipWhile, buffer]});
-observer.event('click').pipe(multicast) 
-*/
 
 class MulticastPipe extends Transform {
   constructor ({ listeners = [] }) {
