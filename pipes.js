@@ -163,6 +163,21 @@ class ThrottlePipe extends Transform {
     done()
   }
 }
+class BufferPipe extends Transform {
+  constructor ({ actionStream }) {
+    super(options)
+    this._data = []
+    this._stream = actionStream
+    this._stream.on('data', () => {
+      this.push(this._data)
+      this._data.length = 0
+    })
+  }
+  _transform (data, encoding, done) {
+    this._data.push(data)
+    done()
+  }
+}
 
 module.exports = {
   ToSubscribePipe,
@@ -170,5 +185,6 @@ module.exports = {
   FilterPipe,
   SkipWhilePipe,
   IntervalPipe,
-  ThrottlePipe
+  ThrottlePipe,
+  BufferPipe
 }
