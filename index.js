@@ -67,7 +67,11 @@ const {
   ToSubscribePipe,
   DebouncePipe,
   FilterPipe,
-  SkipWhilePipe
+  SkipWhilePipe,
+  IntervalPipe,
+  ThrottlePipe,
+  BufferPipe,
+  MulticastPipe
 } = require('./pipes.js')
 const { EventEmitter } = require('events')
 const { Readable } = require('stream')
@@ -101,48 +105,31 @@ Observer.prototype.unsubscribe = function () {
 }
 const a = new Observer()
 
-const filter = new FilterPipe({
-  condition: v => v % 2 === 0
-})
-const skipWhile = new SkipWhilePipe({
-  condition: data => data >= 5
+const skipWhile = new SkipWhilePipe({ condition: data => data > 5 })
+
+const buffer = new BufferPipe({ actionStream: skipWhile })
+
+const multicast = new MulticastPipe({
+  listeners: [buffer, skipWhile]
 })
 
-// const filter = new FilterPipe({ condition: event => event.a > 10 })
-const subscription3 = a
+buffer.subscribe(data => {
+  console.log(data)
+})
+
+const filter = new FilterPipe({ condition: data => data % 2 === 0 })
+
+const subscribe = a
   .event('abc')
   .pipe(filter)
   .subscribe(data => {
     console.log(data)
-  }) // подписаться на событие через трубу
+  })
+
+a.event('abc').pipe(multicast)
 
 for (let i = 0; i < 10; i++) {
   a.emit('abc', i)
 }
-const filter1 = new FilterPipe({
-  condition: v => v % 2 === 0
-})
-
-const subscription4 = a
-  .event('abc')
-  .pipe(filter1)
-  .subscribe(data => {
-    console.log(data)
-  })
-
-setTimeout(() => {
-  subscription3.unsubscribe()
-  console.log('new array')
-  for (let i = 0; i < 10; i++) {
-    a.emit('abc', i)
-  }
-}, 100)
-
-// a.event('abc')
-//   .pipe(skipWhile)
-//   .pipe(filter)
-//   .subscribe(data => console.log(data))
-
-// a.unsubscribe()
 
 module.exports = Observer

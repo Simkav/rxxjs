@@ -61,12 +61,16 @@ const subscription8 = buffer.subscribe(() => {});
 const multicast = new MulticastPipe({listeners: [throttle, skipWhile, buffer]});
 observer.event('click').pipe(multicast)
 */
-const { Readable, Transform, PassThrough } = require('stream')
+const { Writable, Transform, PassThrough, Duplex } = require('stream')
+const subscribe = function (cb) {
+  this.on('data', cb)
+}
 const options = { objectMode: true }
 class ToSubscribePipe extends PassThrough {
   constructor () {
     super(options)
   }
+  subscribe = subscribe
 }
 
 class FilterPipe extends Transform {
@@ -80,6 +84,7 @@ class FilterPipe extends Transform {
     }
     done()
   }
+  subscribe = subscribe
 }
 
 class DebouncePipe extends Transform {
@@ -96,6 +101,7 @@ class DebouncePipe extends Transform {
     }, this._timeout)
     done()
   }
+  subscribe = subscribe
 }
 
 class SkipWhilePipe extends Transform {
@@ -115,6 +121,7 @@ class SkipWhilePipe extends Transform {
     }
     done()
   }
+  subscribe = subscribe
 }
 
 class IntervalPipe extends Transform {
@@ -138,6 +145,7 @@ class IntervalPipe extends Transform {
     }
     done()
   }
+  subscribe = subscribe
 }
 class ThrottlePipe extends Transform {
   constructor ({ timeout, count }) {
@@ -162,6 +170,7 @@ class ThrottlePipe extends Transform {
     }
     done()
   }
+  subscribe = subscribe
 }
 class BufferPipe extends Transform {
   constructor ({ actionStream }) {
@@ -177,6 +186,27 @@ class BufferPipe extends Transform {
     this._data.push(data)
     done()
   }
+  subscribe = subscribe
+}
+/* 
+const multicast = new MulticastPipe({listeners: [throttle, skipWhile, buffer]});
+observer.event('click').pipe(multicast) 
+*/
+
+class MulticastPipe extends Transform {
+  constructor ({ listeners = [] }) {
+    super(options)
+    this._listeners = listeners
+    this._duplex = new PassThrough(options)
+    this._listeners.forEach(listener => {
+      this.pipe(listener)
+    })
+  }
+  _transform (data, encoding, done) {
+    this.push(data)
+    done()
+  }
+  subscribe = subscribe
 }
 
 module.exports = {
@@ -186,5 +216,6 @@ module.exports = {
   SkipWhilePipe,
   IntervalPipe,
   ThrottlePipe,
-  BufferPipe
+  BufferPipe,
+  MulticastPipe
 }
